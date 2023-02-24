@@ -1,7 +1,7 @@
-package net.bcsoft.biblioteca.controller.advice;
+package net.bcsoft.library.controller.advice;
 
-import net.bcsoft.biblioteca.exception.BadRequestException;
-import net.bcsoft.biblioteca.exception.NotFoundException;
+import net.bcsoft.library.exception.BadRequestException;
+import net.bcsoft.library.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;

@@ -1,4 +1,4 @@
-package net.bcsoft.biblioteca.exception;
+package net.bcsoft.library.exception;
 
 public class NotFoundException extends RuntimeException {
     public NotFoundException(String message) {
