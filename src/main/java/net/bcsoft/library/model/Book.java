@@ -3,11 +3,13 @@ package net.bcsoft.library.model;
 import java.util.List;
 
 import javax.persistence.*;
+
 import lombok.*;
 
-@Data
 @AllArgsConstructor
 @NoArgsConstructor
+@EqualsAndHashCode
+@Getter @Setter
 @Entity
 @Table(name = "books")
 public class Book {
@@ -28,9 +30,20 @@ public class Book {
     @Column
     private Integer quantity;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch=FetchType.EAGER)
     @JoinTable(name = "loans",
             joinColumns = @JoinColumn(name = "book_id"),
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private List<User> users;
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id=" + id +
+                ", title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", serialCode='" + serialCode + '\'' +
+                ", quantity=" + quantity +
+                '}';
+    }
 }

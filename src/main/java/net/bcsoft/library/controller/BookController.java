@@ -3,7 +3,6 @@ package net.bcsoft.library.controller;
 import lombok.AllArgsConstructor;
 import net.bcsoft.library.model.Book;
 import net.bcsoft.library.service.BookService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +17,9 @@ public class BookController {
     private BookService bookService;
 
     @PostMapping
-    public ResponseEntity<Void> createBook(@RequestBody Book book) {
+    public ResponseEntity<Book> createBook(@RequestBody Book book) {
         bookService.saveBook(book);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return new ResponseEntity<>(book, HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -35,23 +34,23 @@ public class BookController {
         return new ResponseEntity<>(book, HttpStatus.OK);
     }
 
-    @GetMapping("/serialCode/{serialCode}")
-    public ResponseEntity<List<Book>> getBooksBySerialCode(@PathVariable("serialCode") String serialCode) {
+    @GetMapping("/serialCode")
+    public ResponseEntity<List<Book>> getBooksBySerialCode(@RequestParam("serialCode") String serialCode) {
         List<Book> books = bookService.readBooksBySerialCode(serialCode);
         return new ResponseEntity<>(books, HttpStatus.OK);
     }
 
-    @GetMapping("/author/{author}")
-    public ResponseEntity<List<Book>> getBooksByAuthor(@PathVariable("author") String author) {
+    @GetMapping("/author")
+    public ResponseEntity<List<Book>> getBooksByAuthor(@RequestParam("author") String author) {
         List<Book> books = bookService.readBooksByAuthor(author);
         return new ResponseEntity<>(books, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateBook(@PathVariable("id") Long id, @RequestBody Book book) {
+    public ResponseEntity<Book> updateBook(@PathVariable("id") Long id, @RequestBody Book book) {
         book.setId(id);
         bookService.updateBook(book);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(book, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")

@@ -13,6 +13,7 @@ import javax.transaction.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -35,8 +36,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> readAllUsers() {
-        List<User> users = userRepository.findAll();
-        users.sort(Comparator.comparing(User::getId));
+        List<User> users = userRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(User::getId))
+                .collect(Collectors.toList());
         log.info("All users retrieved and sorted by id in ascending order successfully: {}", users);
         return users;
     }
@@ -55,11 +58,24 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void updateUser(User user) {
-        Optional<User> optionalExistingUser = userRepository.findByEmail(user.getEmail());
-        if (optionalExistingUser.isPresent() && !optionalExistingUser.get().getId().equals(user.getId())) {
-            log.error("User not updated: An user with the same email already exists");
-            throw new BadRequestException("An user with the same email already exists");
+        Optional<User> existingUserOpt = userRepository.findById(user.getId());
+        if (!existingUserOpt.isPresent()) {
+            log.error("User not found with id: {}", user.getId());
+            throw new NotFoundException("User not found with id: " + user.getId());
         }
+        User existingUser = existingUserOpt.get();
+        // Verifica se l'email dell'utente passato come parametro è diversa dall'email dell'utente recuperato
+        // e se esiste già un utente con la stessa email nel database
+        if (!existingUser.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(user.getEmail())) {
+            log.error("User not updated: An user with this email already exists");
+            throw new BadRequestException("An user with this email already exists");
+        }
+        existingUser.setId(user.getId());
+        existingUser.setUsername(user.getUsername());
+        existingUser.setEmail(user.getEmail());
+        existingUser.setUsername(user.getUsername());
+        existingUser.setPassword(user.getPassword());
+        existingUser.setBooks(user.getBooks());
         userRepository.save(user);
         log.info("User updated successfully: {}", user);
     }

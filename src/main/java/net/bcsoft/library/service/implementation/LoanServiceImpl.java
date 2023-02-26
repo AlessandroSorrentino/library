@@ -12,7 +12,6 @@ import net.bcsoft.library.service.LoanService;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,9 +88,8 @@ public class LoanServiceImpl implements LoanService {
 
     @Override
     public List<Book> readAllLoans() {
-        List<Book> loans = bookRepository.findAllLoanedBooks();
-        loans.sort(Comparator.comparing(Book::getId));
-        log.info("All loans retrieved and sorted by id successfully: " + loans);
+        List<Book> loans = bookRepository.findByUsersIsNotNull();
+        log.info("Loans retrieved successfully: " + loans.size());
         return loans;
     }
 }

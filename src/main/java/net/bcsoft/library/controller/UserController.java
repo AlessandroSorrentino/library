@@ -3,7 +3,6 @@ package net.bcsoft.library.controller;
 import lombok.AllArgsConstructor;
 import net.bcsoft.library.model.User;
 import net.bcsoft.library.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,9 +17,9 @@ public class UserController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<Void> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@RequestBody User user) {
         userService.saveUser(user);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return new ResponseEntity<>(user, HttpStatus.CREATED);
     }
 
     @GetMapping
@@ -36,10 +35,10 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateUser(@PathVariable("id") Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @RequestBody User user) {
         user.setId(id);
         userService.updateUser(user);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return new ResponseEntity<>(user, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
