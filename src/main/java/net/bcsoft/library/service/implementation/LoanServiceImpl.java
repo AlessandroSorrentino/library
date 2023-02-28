@@ -1,6 +1,6 @@
 package net.bcsoft.library.service.implementation;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.bcsoft.library.exception.BadRequestException;
 import net.bcsoft.library.exception.NotFoundException;
@@ -17,12 +17,13 @@ import java.util.Optional;
 
 @Service
 @Transactional
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Log4j2
 public class LoanServiceImpl implements LoanService {
 
-    private UserRepository userRepository;
-    private BookRepository bookRepository;
+
+    private final UserRepository userRepository;
+    private final BookRepository bookRepository;
 
     @Override
     public void addLoan(Long userId, Long bookId) {
@@ -92,4 +93,6 @@ public class LoanServiceImpl implements LoanService {
         log.info("Loans retrieved successfully: " + loans.size());
         return loans;
     }
+
 }
+

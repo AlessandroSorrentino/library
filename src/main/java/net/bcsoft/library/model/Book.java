@@ -3,6 +3,7 @@ package net.bcsoft.library.model;
 import java.util.List;
 
 import javax.persistence.*;
+import javax.validation.constraints.*;
 
 import lombok.*;
 
@@ -18,15 +19,20 @@ public class Book {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Title cannot be blank")
     @Column
     private String title;
 
+    @NotBlank(message = "Author cannot be blank")
     @Column
     private String author;
 
-    @Column
+    @NotBlank(message = "Serial code cannot be blank")
+    @Column(name = "serial_code")
     private String serialCode;
 
+    @NotNull(message = "Quantity cannot be null")
+    @Min(value = 0, message = "Quantity cannot be negative")
     @Column
     private Integer quantity;
 

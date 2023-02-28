@@ -1,56 +1,67 @@
 package net.bcsoft.library.controller;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import net.bcsoft.library.dto.BookDTO;
+import net.bcsoft.library.mapper.BookMapper;
 import net.bcsoft.library.model.Book;
 import net.bcsoft.library.service.BookService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("/books")
 public class BookController {
 
-    private BookService bookService;
+    private final BookService bookService;
+    private final BookMapper bookMapper;
+
 
     @PostMapping
-    public ResponseEntity<Book> createBook(@RequestBody Book book) {
+    public ResponseEntity<Void> createBook(@Valid @RequestBody BookDTO bookDTO) {
+        Book book = bookMapper.toEntity(bookDTO);
         bookService.saveBook(book);
-        return new ResponseEntity<>(book, HttpStatus.CREATED);
+        return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAllBooks() {
+    public ResponseEntity<List<BookDTO>> getAllBooks() {
         List<Book> books = bookService.readAllBooks();
-        return new ResponseEntity<>(books, HttpStatus.OK);
+        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
+        return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Book> getBookById(@PathVariable("id") Long id) {
+    public ResponseEntity<BookDTO> getBookById(@PathVariable("id") Long id) {
         Book book = bookService.readBookById(id);
-        return new ResponseEntity<>(book, HttpStatus.OK);
+        return new ResponseEntity<>(bookMapper.toDTO(book), HttpStatus.OK);
     }
 
     @GetMapping("/serialCode")
-    public ResponseEntity<List<Book>> getBooksBySerialCode(@RequestParam("serialCode") String serialCode) {
+    public ResponseEntity<List<BookDTO>> getBooksBySerialCode(@RequestParam("serialCode") String serialCode) {
         List<Book> books = bookService.readBooksBySerialCode(serialCode);
-        return new ResponseEntity<>(books, HttpStatus.OK);
+        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
+        return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
     }
 
     @GetMapping("/author")
-    public ResponseEntity<List<Book>> getBooksByAuthor(@RequestParam("author") String author) {
+    public ResponseEntity<List<BookDTO>> getBooksByAuthor(@RequestParam("author") String author) {
         List<Book> books = bookService.readBooksByAuthor(author);
-        return new ResponseEntity<>(books, HttpStatus.OK);
+        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
+        return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Book> updateBook(@PathVariable("id") Long id, @RequestBody Book book) {
+    public ResponseEntity<BookDTO> updateBook(@Valid @PathVariable("id") Long id, @RequestBody BookDTO bookDTO) {
+        Book book = bookMapper.toEntity(bookDTO);
         book.setId(id);
         bookService.updateBook(book);
-        return new ResponseEntity<>(book, HttpStatus.OK);
+        return new ResponseEntity<>(bookDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")

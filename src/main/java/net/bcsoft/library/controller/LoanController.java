@@ -1,6 +1,8 @@
 package net.bcsoft.library.controller;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import net.bcsoft.library.dto.BookDTO;
+import net.bcsoft.library.mapper.BookMapper;
 import net.bcsoft.library.model.Book;
 import net.bcsoft.library.service.LoanService;
 import org.springframework.http.HttpStatus;
@@ -10,11 +12,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @RequestMapping("/loans")
 public class LoanController {
 
-    private LoanService loanService;
+    private final LoanService loanService;
+    private final BookMapper bookMapper;
 
     @PostMapping("/{userId}/{bookId}")
     public ResponseEntity<Void> addLoan(@PathVariable("userId") Long userId, @PathVariable("bookId") Long bookId) {
@@ -29,8 +32,9 @@ public class LoanController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Book>> getAllLoans() {
+    public ResponseEntity<List<BookDTO>> getAllLoans() {
         List<Book> loans = loanService.readAllLoans();
-        return new ResponseEntity<>(loans, HttpStatus.OK);
+        List<BookDTO> loanDTOs = bookMapper.toDTOList(loans);
+        return new ResponseEntity<>(loanDTOs, HttpStatus.OK);
     }
 }

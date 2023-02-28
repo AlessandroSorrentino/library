@@ -2,11 +2,13 @@ package net.bcsoft.library.controller.advice;
 
 import net.bcsoft.library.exception.BadRequestException;
 import net.bcsoft.library.exception.NotFoundException;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+
 
 // La classe GlobalExceptionHandler fornisce un modo per gestire le eccezioni in modo centralizzato all'interno dell'applicazione
 // Una volta configurato, il meccanismo di gestione degli errori gestisce automaticamente le eccezioni all'interno dell'applicazione. Quando viene sollevata un'eccezione, Spring cerca automaticamente un gestore di eccezioni configurato per gestirla
@@ -27,4 +29,5 @@ public class GlobalExceptionHandler {
     String badRequestHandler(BadRequestException ex) {
         return ex.getMessage();
     }
+
 }
