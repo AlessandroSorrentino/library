@@ -50,6 +50,7 @@ public class Book {
                 ", author='" + author + '\'' +
                 ", serialCode='" + serialCode + '\'' +
                 ", quantity=" + quantity +
+                ", users=" + users +
                 '}';
     }
 }

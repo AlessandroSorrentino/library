@@ -17,7 +17,6 @@ public class BookDTO {
     private String author;
     private String serialCode;
     private Integer quantity;
-    private List<UserDTO> users;
 }
 
 

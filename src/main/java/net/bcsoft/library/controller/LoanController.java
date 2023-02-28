@@ -2,6 +2,7 @@ package net.bcsoft.library.controller;
 
 import lombok.RequiredArgsConstructor;
 import net.bcsoft.library.dto.BookDTO;
+import net.bcsoft.library.dto.LoanDTO;
 import net.bcsoft.library.mapper.BookMapper;
 import net.bcsoft.library.model.Book;
 import net.bcsoft.library.service.LoanService;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,9 +34,13 @@ public class LoanController {
     }
 
     @GetMapping
-    public ResponseEntity<List<BookDTO>> getAllLoans() {
+    public ResponseEntity<List<LoanDTO>> getAllLoans() {
         List<Book> loans = loanService.readAllLoans();
-        List<BookDTO> loanDTOs = bookMapper.toDTOList(loans);
+        System.out.println("CONTROLLER1" + loans);
+        List<LoanDTO> loanDTOs = loans.stream().map(bookMapper::toLoanDTO).collect(Collectors.toList());
+
+        System.out.println("CONTROLLER2" + loans);
+
         return new ResponseEntity<>(loanDTOs, HttpStatus.OK);
     }
 }

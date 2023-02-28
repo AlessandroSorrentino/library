@@ -2,6 +2,7 @@ package net.bcsoft.library.mapper;
 
 import java.util.List;
 
+import net.bcsoft.library.dto.LoanDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
@@ -17,9 +18,11 @@ public interface BookMapper {
 
     BookDTO toDTO(Book book);
 
-    List<BookDTO> toDTOList(List<Book> books);
+    @Mapping(source = "book.title", target = "bookTitle")
+    @Mapping(source = "book.author", target = "bookAuthor")
+    @Mapping(source = "book.users", target = "users")
+    LoanDTO toLoanDTO(Book book);
 
     Book toEntity(BookDTO bookDTO);
 
-    List<Book> toEntityList(List<BookDTO> bookDTOs);
 }

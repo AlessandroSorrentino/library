@@ -1,9 +1,10 @@
 package net.bcsoft.library.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+
+import javax.persistence.*;
+import javax.validation.constraints.*;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -11,9 +12,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LoanDTO {
 
-    private Long bookId;
     private String bookTitle;
-    private Long userId;
-    private String username;
+    private String bookAuthor;
+    private List<UserDTO> users;
 }
-
