@@ -23,10 +23,10 @@ public class BookController {
 
 
     @PostMapping
-    public ResponseEntity<Void> createBook(@Valid @RequestBody BookDTO bookDTO) {
+    public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookDTO bookDTO) {
         Book book = bookMapper.toEntity(bookDTO);
         bookService.saveBook(book);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return new ResponseEntity<>(bookDTO, HttpStatus.CREATED);
     }
 
     @GetMapping
