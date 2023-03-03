@@ -1,5 +1,7 @@
 package net.bcsoft.library.controller;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import net.bcsoft.library.dto.UserDTO;
 import net.bcsoft.library.mapper.UserMapper;
@@ -15,20 +17,23 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/api/users")
+@Api(value = "User Management System")
 public class UserController {
 
     private final UserService userService;
     private final UserMapper userMapper;
 
     @PostMapping
-    public ResponseEntity<Void> createUser(@Valid @RequestBody UserDTO userDTO) {
+    @ApiOperation(value = "Create user")
+    public ResponseEntity<UserDTO> createUser(@Valid @RequestBody UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         userService.saveUser(user);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        return new ResponseEntity<>(userDTO, HttpStatus.CREATED);
     }
 
     @GetMapping
+    @ApiOperation(value = "Get all users")
     public ResponseEntity<List<UserDTO>> getAllUsers() {
         List<User> users = userService.readAllUsers();
         List<UserDTO> userDTOs = users.stream().map(userMapper::toDTO).collect(Collectors.toList());
@@ -36,12 +41,14 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @ApiOperation(value = "Get user by id")
     public ResponseEntity<UserDTO> getUserById(@PathVariable("id") Long id) {
         User user = userService.readUserById(id);
         return new ResponseEntity<>(userMapper.toDTO(user), HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
+    @ApiOperation(value = "Update user by id")
     public ResponseEntity<UserDTO> updateUser(@Valid @PathVariable("id") Long id, @RequestBody UserDTO userDTO) {
         User user = userMapper.toEntity(userDTO);
         user.setId(id);
@@ -50,6 +57,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @ApiOperation(value = "Delete user by id")
     public ResponseEntity<Void> deleteUser(@PathVariable("id") Long id) {
         userService.deleteUser(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

@@ -1,5 +1,7 @@
 package net.bcsoft.library.controller;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import net.bcsoft.library.dto.BookDTO;
 import net.bcsoft.library.mapper.BookMapper;
@@ -15,7 +17,8 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/books")
+@RequestMapping("/api/books")
+@Api(value = "Book Management System")
 public class BookController {
 
     private final BookService bookService;
@@ -23,6 +26,7 @@ public class BookController {
 
 
     @PostMapping
+    @ApiOperation(value = "Create book")
     public ResponseEntity<BookDTO> createBook(@Valid @RequestBody BookDTO bookDTO) {
         Book book = bookMapper.toEntity(bookDTO);
         bookService.saveBook(book);
@@ -30,34 +34,41 @@ public class BookController {
     }
 
     @GetMapping
+    @ApiOperation(value = "Get all books")
     public ResponseEntity<List<BookDTO>> getAllBooks() {
         List<Book> books = bookService.readAllBooks();
-        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
+        List<BookDTO> bookDTOs = books.stream()
+                .map(bookMapper::toDTO)
+                .collect(Collectors.toList());
         return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
+    @ApiOperation(value = "Get book by id")
     public ResponseEntity<BookDTO> getBookById(@PathVariable("id") Long id) {
         Book book = bookService.readBookById(id);
         return new ResponseEntity<>(bookMapper.toDTO(book), HttpStatus.OK);
     }
 
     @GetMapping("/serialCode")
-    public ResponseEntity<List<BookDTO>> getBooksBySerialCode(@RequestParam("serialCode") String serialCode) {
-        List<Book> books = bookService.readBooksBySerialCode(serialCode);
-        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
-        return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
+    @ApiOperation(value = "Get book by serial code")
+    public ResponseEntity<BookDTO> getBookBySerialCode(@RequestParam("serialCode") String serialCode) {
+        Book book = bookService.readBookBySerialCode(serialCode);
+        return new ResponseEntity<>(bookMapper.toDTO(book), HttpStatus.OK);
     }
-
     @GetMapping("/author")
+    @ApiOperation(value = "Get books by author")
     public ResponseEntity<List<BookDTO>> getBooksByAuthor(@RequestParam("author") String author) {
         List<Book> books = bookService.readBooksByAuthor(author);
-        List<BookDTO> bookDTOs = books.stream().map(bookMapper::toDTO).collect(Collectors.toList());
+        List<BookDTO> bookDTOs = books.stream()
+                .map(bookMapper::toDTO)
+                .collect(Collectors.toList());
         return new ResponseEntity<>(bookDTOs, HttpStatus.OK);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BookDTO> updateBook(@Valid @PathVariable("id") Long id, @RequestBody BookDTO bookDTO) {
+    @ApiOperation(value = "Update book by id")
+    public ResponseEntity<BookDTO> updateBook(@PathVariable("id") Long id, @Valid @RequestBody BookDTO bookDTO) {
         Book book = bookMapper.toEntity(bookDTO);
         book.setId(id);
         bookService.updateBook(book);
@@ -65,6 +76,7 @@ public class BookController {
     }
 
     @DeleteMapping("/{id}")
+    @ApiOperation(value = "Delete book by id")
     public ResponseEntity<Void> deleteBook(@PathVariable("id") Long id) {
         bookService.deleteBook(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);

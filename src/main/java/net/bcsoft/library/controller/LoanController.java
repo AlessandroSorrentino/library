@@ -1,5 +1,7 @@
 package net.bcsoft.library.controller;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import lombok.RequiredArgsConstructor;
 import net.bcsoft.library.dto.LoanDTO;
 import net.bcsoft.library.mapper.BookMapper;
@@ -14,28 +16,32 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/loans")
+@RequestMapping("/api/loans")
+@Api(value = "Loan Management System")
 public class LoanController {
 
     private final LoanService loanService;
     private final BookMapper bookMapper;
 
     @PostMapping("/{userId}/{bookId}")
-    public ResponseEntity<Void> addLoan(@PathVariable("userId") Long userId, @PathVariable("bookId") Long bookId) {
+    @ApiOperation(value = "Create loan by user id and book id")
+    public ResponseEntity<Void> createLoan(@PathVariable("userId") Long userId, @PathVariable("bookId") Long bookId) {
         loanService.addLoan(userId, bookId);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @DeleteMapping("/{userId}/{bookId}")
-    public ResponseEntity<Void> removeLoan(@PathVariable("userId") Long userId, @PathVariable("bookId") Long bookId) {
-        loanService.removeLoan(userId, bookId);
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
     @GetMapping
+    @ApiOperation(value = "Get all loans")
     public ResponseEntity<List<LoanDTO>> getAllLoans() {
         List<Book> loans = loanService.readAllLoans();
         List<LoanDTO> loanDTOs = loans.stream().map(bookMapper::toLoanDTO).collect(Collectors.toList());
         return new ResponseEntity<>(loanDTOs, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/{userId}/{bookId}")
+    @ApiOperation(value = "Delete by user id and book id")
+    public ResponseEntity<Void> deleteLoan(@PathVariable("userId") Long userId, @PathVariable("bookId") Long bookId) {
+        loanService.removeLoan(userId, bookId);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

@@ -25,7 +25,7 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
 
     @Override
-    public void saveBook(Book book) {
+    public Book saveBook(Book book) {
         if (book == null) {
             log.error("Book not saved: Book is null");
             throw new BadRequestException("Book cannot be null");
@@ -39,6 +39,7 @@ public class BookServiceImpl implements BookService {
         bookRepository.save(book);
 
         log.info("Book saved successfully: {}", book);
+        return book;
     }
 
     @Override
@@ -73,21 +74,23 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public List<Book> readBooksBySerialCode(String serialCode) {
+    public Book readBookBySerialCode(String serialCode) {
         if (serialCode == null || serialCode.trim().isEmpty()) {
             log.error("Books not read: Serial code is null or empty");
             throw new BadRequestException("Serial code cannot be null or empty");
         }
-        List<Book> books = bookRepository.findBySerialCodeIgnoreCase(serialCode);
+        Optional<Book> optionalBook = bookRepository.findBySerialCodeIgnoreCase(serialCode);
 
-        if (books == null || books.isEmpty()) {
-            log.warn("No books found with serial code: {}", serialCode);
-            throw new NotFoundException("No books found with serial code: " + serialCode);
+        if (!optionalBook.isPresent()) {
+            log.error("Book not found with serial code: {}", serialCode);
+            throw new NotFoundException("Book not found with serial code: " + serialCode);
         }
+        Book book = optionalBook.get();
 
-        log.info("Books retrieved successfully with serial code {}: {}", serialCode, books);
-        return books;
+        log.info("Book retrieved successfully with serialcode {}: {}", serialCode, book);
+        return book;
     }
+
     @Override
     public List<Book> readBooksByAuthor(String author) {
         if (author == null || author.trim().isEmpty()) {
@@ -106,13 +109,12 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public void updateBook(Book book) {
+    public Book updateBook(Book book) {
         if (book == null || book.getId() == null) {
             log.error("Book not updated: Book or book id is null");
             throw new BadRequestException("Book and book id cannot be null");
         }
         Optional<Book> optionalBook = bookRepository.findById(book.getId());
-
 
         if (!optionalBook.isPresent()) {
             log.error("Book not found with id: {}", book.getId());
@@ -132,6 +134,7 @@ public class BookServiceImpl implements BookService {
         bookRepository.save(existingBook);
 
         log.info("Book updated successfully: {}", existingBook);
+        return existingBook;
     }
 
     @Override
