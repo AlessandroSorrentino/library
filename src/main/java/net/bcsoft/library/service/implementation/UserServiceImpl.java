@@ -24,7 +24,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    public void saveUser(User user) {
+    public User saveUser(User user) {
         if (user == null) {
             log.error("User not saved: User is null");
             throw new BadRequestException("User cannot be null");
@@ -38,6 +38,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         log.info("User saved successfully: {}", user);
+        return user;
     }
 
     @Override

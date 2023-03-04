@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
 class BookControllerTest {
 
     private static final String BOOK_SERIAL_CODE = "ABC123";
@@ -35,6 +35,7 @@ class BookControllerTest {
     private static final String BOOK_TITLE2 = "Title 2";
 
     private static final Logger log = LogManager.getLogger(BookServiceImpl.class);
+    public static final long BOOK_ID = 1L;
     private BookController bookController;
 
     @Mock
@@ -51,7 +52,7 @@ class BookControllerTest {
 
     @Test
     void createBook() {
-        Book book = new Book(1L, BOOK_TITLE, BOOK_AUTHOR,BOOK_SERIAL_CODE, 5, null);
+        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR,BOOK_SERIAL_CODE, 5, null);
         BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5);
         when(bookMapper.toEntity(bookDTO)).thenReturn(book);
 
@@ -63,7 +64,7 @@ class BookControllerTest {
 
     @Test
     void getAllBooks() {
-        Book book1 = new Book(1L,BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
+        Book book1 = new Book(BOOK_ID,BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
         Book book2 = new Book(2L, BOOK_TITLE2, BOOK_AUTHOR2, BOOK_SERIAL_CODE2, 3, null);
         List<Book> books = Arrays.asList(book1, book2);
 
@@ -84,24 +85,23 @@ class BookControllerTest {
 
     @Test
     void getBookById() {
-        Long id = 1L;
-        Book book = new Book(id, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
+        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
         BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5);
-        when(bookService.readBookById(id)).thenReturn(book);
+        when(bookService.readBookById(BOOK_ID)).thenReturn(book);
         when(bookMapper.toDTO(book)).thenReturn(bookDTO);
 
-        ResponseEntity<BookDTO> response = bookController.getBookById(id);
+        ResponseEntity<BookDTO> response = bookController.getBookById(BOOK_ID);
         log.info(response.getStatusCode() + "\n" + response.getBody());
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(bookDTO, response.getBody());
-        verify(bookService, times(1)).readBookById(id);
+        verify(bookService, times(1)).readBookById(BOOK_ID);
     }
 
 
     @Test
     void getBookBySerialCode() {
         String serialCode = "SC1";
-        Book book = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, serialCode, 5, null);
+        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, serialCode, 5, null);
         BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, serialCode, 5);
         when(bookService.readBookBySerialCode(serialCode)).thenReturn(book);
         when(bookMapper.toDTO(book)).thenReturn(bookDTO);
@@ -116,8 +116,8 @@ class BookControllerTest {
     void getAllBooksByAuthor() {
         String author = "Alessandro Sorrentino";
         // given
-        Book book1 = new Book(1L, BOOK_TITLE, author, BOOK_SERIAL_CODE, 5, null);
-        Book book2 = new Book(2L, BOOK_TITLE2, author, BOOK_SERIAL_CODE2, 3, null);
+        Book book1 = new Book(BOOK_ID, BOOK_TITLE, author, BOOK_SERIAL_CODE, 5, null);
+        Book book2 = new Book(BOOK_ID, BOOK_TITLE2, author, BOOK_SERIAL_CODE2, 3, null);
         List<Book> books = Arrays.asList(book1, book2);
 
         BookDTO bookDTO1 = new BookDTO(BOOK_TITLE, author, BOOK_SERIAL_CODE, 5);
@@ -136,12 +136,11 @@ class BookControllerTest {
 
     @Test
     void updateBook() {
-        Long bookId = 1L;
         BookDTO bookDTO = new BookDTO( "Old Title", "Old Author", "SC1", 10);
-        Book updatedBook = new Book(bookId, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
+        Book updatedBook = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
         when(bookMapper.toEntity(bookDTO)).thenReturn(updatedBook);
 
-        ResponseEntity<BookDTO> response = bookController.updateBook(bookId, bookDTO);
+        ResponseEntity<BookDTO> response = bookController.updateBook(BOOK_ID, bookDTO);
         log.info(response.getStatusCode() + "\n" + response.getBody());
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(bookDTO, response.getBody());

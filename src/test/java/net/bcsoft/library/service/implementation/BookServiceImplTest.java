@@ -3,38 +3,39 @@ package net.bcsoft.library.service.implementation;
 import net.bcsoft.library.exception.BadRequestException;
 import net.bcsoft.library.exception.NotFoundException;
 import net.bcsoft.library.model.Book;
+import net.bcsoft.library.model.User;
 import net.bcsoft.library.repository.BookRepository;
 import net.bcsoft.library.service.BookService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
-import java.util.*;
-
-import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
 class BookServiceImplTest {
 
-    private static final String BOOK_SERIAL_CODE = "ABC123";
-    private static final String BOOK_SERIAL_CODE2 = "DEF456";
+    private static final String TITLE = "The Great Gatsby";
+    private static final String AUTHOR = "Scott Fitzgerald";
+    private static final String SERIALCODE = "ABC123";
 
-    private static final String BOOK_AUTHOR = "Author 1";
-    private static final String BOOK_AUTHOR2 = "Author 2";
-    private static final String BOOK_TITLE = "Title 1";
-    private static final String BOOK_TITLE2 = "Title 2";
+    private static final Long BOOK_ID = 1L;
 
     private BookService bookService;
 
     @Mock
     private BookRepository bookRepository;
+
 
     @BeforeEach
     void setUp() {
@@ -43,96 +44,153 @@ class BookServiceImplTest {
     }
 
     @Test
-    void saveBook() {
-        Book book = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
+    void testSaveBook() {
+        Book book = new Book(BOOK_ID, TITLE, AUTHOR, SERIALCODE, 5, null);
+
+        // Configure the mock objects to return the expected results
         when(bookRepository.save(book)).thenReturn(book);
 
+        // Test adding a new book
         Book savedBook = bookService.saveBook(book);
-
         assertNotNull(savedBook);
         assertEquals(book, savedBook);
+
+        // Test adding a book that doesn't exist
+        assertThrows(BadRequestException.class, () -> bookService.saveBook(null));
+
+        // Create a new book with a duplicate serial code
+        Book duplicateBook = new Book(2L, TITLE, AUTHOR, SERIALCODE, 5, null);
+        when(bookRepository.existsBySerialCodeIgnoreCase(duplicateBook.getSerialCode())).thenReturn(true);
+        assertThrows(BadRequestException.class, () -> bookService.saveBook(duplicateBook));
     }
 
     @Test
-    void saveBook_NullBook() {
-        BadRequestException exception = assertThrows(BadRequestException.class, () -> bookService.saveBook(null));
-        assertEquals("Book cannot be null",   exception.getMessage());
+    void testReadAllBooks() {
+        List<Book> bookList = new ArrayList<>();
+        bookList.add(new Book(1L, TITLE, AUTHOR, SERIALCODE, 5, null));
+        bookList.add(new Book(2L, "To Kill a Mockingbird", "Harper Lee", "DEF456", 6, null));
+
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findAll()).thenReturn(bookList);
+
+        // Test retrieving all books
+        List<Book> result = bookService.readAllBooks();
+        assertNotNull(result);
+        assertEquals(bookList, result);
+
+        // Test retrieving all books when there are none
+        when(bookRepository.findAll()).thenReturn(new ArrayList<>());
+        assertThrows(NotFoundException.class, () -> bookService.readAllBooks());
     }
 
     @Test
-    void saveBook_ExistingSerialCode() {
-        // given
-        Book existingBook = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
+    void testReadBookById() {
+        Book book = new Book(BOOK_ID, TITLE, AUTHOR, SERIALCODE, 5, null);
 
-        // when
-        when(bookRepository.existsBySerialCodeIgnoreCase(existingBook.getSerialCode())).thenReturn(true);
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findById(BOOK_ID)).thenReturn(Optional.of(book));
 
-        // then
-        assertThrows(BadRequestException.class, () -> bookService.saveBook(existingBook));
+        // Test retrieving a book by ID
+        Book result = bookService.readBookById(BOOK_ID);
+        assertNotNull(result);
+        assertEquals(book, result);
+
+        // Test retrieving a book with a null ID
+        assertThrows(BadRequestException.class, () -> bookService.readBookById(null));
+
+        // Test retrieving a book with a non-existing ID
+        assertThrows(NotFoundException.class, () -> bookService.readBookById(2L));
     }
 
     @Test
-    void readAllBooks() {
-        Book book1 = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        Book book2 = new Book(2L, BOOK_TITLE2, BOOK_AUTHOR2, BOOK_SERIAL_CODE2, 5, null);
+    void testReadBookBySerialCode() {
+        Book book = new Book(BOOK_ID, TITLE, AUTHOR, SERIALCODE, 5, null);
 
-        List<Book> booksListRepository = Arrays.asList(book1, book2);
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findBySerialCodeIgnoreCase(SERIALCODE)).thenReturn(Optional.of(book));
 
-        when(bookRepository.findAll()).thenReturn(booksListRepository);
+        // Test retrieving a book by serial code
+        Book result = bookService.readBookBySerialCode(SERIALCODE);
+        assertNotNull(result);
+        assertEquals(book, result);
 
-        List<Book> booksListService = bookService.readAllBooks();
-
-        assertThat(booksListService).isNotEmpty()
-                .hasSize(booksListRepository.size())
-                .containsExactlyElementsOf(booksListRepository);
-    }
-
-    @Test
-    void readAllBooks_NotFound() {
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> bookService.readAllBooks());
-        assertEquals("No books found",   exception.getMessage());
-    }
-
-    @Test
-    void readBookById() {
-        Long id = 1L;
-        Book book = new Book(id, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        given(bookRepository.findById(id)).willReturn(Optional.of(book));
-
-        Book foundBook = bookService.readBookById(id);
-        assertNotNull(foundBook);
-        assertEquals(book, foundBook);
-
-        NotFoundException exception = assertThrows(NotFoundException.class, () -> bookService.readBookById(2L));
-        assertEquals("Book not found with id: " + 2L, exception.getMessage());
-    }
-
-    @Test
-    void readBookBySerialCode() {
-        Book book = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        when(bookRepository.findBySerialCodeIgnoreCase(BOOK_SERIAL_CODE)).thenReturn(Optional.of(book));
-
-        Book foundBook = bookService.readBookBySerialCode(BOOK_SERIAL_CODE);
-        assertEquals(book, foundBook);
-
+        // Test retrieving a book with a null serial code
         assertThrows(BadRequestException.class, () -> bookService.readBookBySerialCode(null));
-        assertThrows(BadRequestException.class, () -> bookService.readBookBySerialCode(""));
-        assertThrows(NotFoundException.class, () -> bookService.readBookBySerialCode("BOOK_SERIAL_CODE2"));
+        Assertions.assertThrows(BadRequestException.class, () -> bookService.readBookBySerialCode(""));
+
+        // Test retrieving a book with a non-existing serial code
+        String nonExistingSerialCode = "XYZ987";
+        when(bookRepository.findBySerialCodeIgnoreCase(nonExistingSerialCode)).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> bookService.readBookBySerialCode(nonExistingSerialCode));
+
     }
 
     @Test
-    void readBooksByAuthor() {
-        Book book1 = new Book(1L, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        Book book2 = new Book(1L, BOOK_TITLE2, BOOK_AUTHOR, BOOK_SERIAL_CODE2, 5, null);
-        when(bookRepository.findByAuthorContainingIgnoreCase(BOOK_AUTHOR)).thenReturn(Arrays.asList(book1, book2));
+    void testReadBooksByAuthor() {
+        List<Book> bookList = new ArrayList<>();
+        bookList.add(new Book(1L, TITLE, AUTHOR, SERIALCODE, 5, null));
+        bookList.add(new Book(2L, "To Kill a Mockingbird", "Harper Lee", "DEF456", 6, null));
 
-        List<Book> foundBooks = bookService.readBooksByAuthor(BOOK_AUTHOR);
-        assertEquals(2, foundBooks.size());
-        assertTrue(foundBooks.contains(book1));
-        assertTrue(foundBooks.contains(book2));
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findByAuthorContainingIgnoreCase(AUTHOR)).thenReturn(bookList);
 
+        // Test retrieving a book by author
+        List<Book> result = bookService.readBooksByAuthor(AUTHOR);
+        assertNotNull(result);
+        assertEquals(bookList, result);
+
+        // Test retrieving a book with a null or empty serial code
         assertThrows(BadRequestException.class, () -> bookService.readBooksByAuthor(null));
         assertThrows(BadRequestException.class, () -> bookService.readBooksByAuthor(""));
-        assertThrows(NotFoundException.class, () -> bookService.readBooksByAuthor("Author C"));
+
+        // Test retrieving a book with a non-existing author
+        String nonExistingAuthor = "William Shakespeare";
+        Mockito.when(bookRepository.findByAuthorContainingIgnoreCase(nonExistingAuthor)).thenReturn(new ArrayList<>());
+        assertThrows(NotFoundException.class, () -> bookService.readBooksByAuthor(nonExistingAuthor));
+
+        verify(bookRepository, times(2)).findByAuthorContainingIgnoreCase(Mockito.anyString());
+    }
+
+
+    @Test
+    void testUpdateBook() {
+        Book existingBook = new Book(BOOK_ID, TITLE, AUTHOR, SERIALCODE, 5, null);
+        Book updatedBook = new Book(1L, "Updated title", "Updated book", "CBA321", 4, null);
+
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findById(existingBook.getId())).thenReturn(Optional.of(existingBook));
+        when(bookRepository.save(existingBook)).thenReturn(existingBook);
+
+        // Test updating a book
+        bookService.updateBook(updatedBook);
+        assertEquals(updatedBook, existingBook);
+
+        // Test updating a book that doesn't exist
+        Book nonExistingBook = new Book(2L, "fake title", "fake author", "ERT357", 7, null);
+        when(bookRepository.findById(nonExistingBook.getId())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> bookService.updateBook(nonExistingBook));
+
+        // Test updating a book with a serial code that already exists
+        Book duplicateBook = new Book(2L, "DuplicateTitle", "Duplicate Auhtor", SERIALCODE, 5, null);
+        when(bookRepository.findById(duplicateBook.getId())).thenReturn(Optional.of(existingBook));
+        when(bookRepository.existsBySerialCodeIgnoreCase(duplicateBook.getSerialCode())).thenReturn(true);
+        assertThrows(BadRequestException.class, () -> bookService.updateBook(duplicateBook));
+    }
+
+    @Test
+    void testDeleteBook() {
+        Book existingBook = new Book(BOOK_ID, TITLE, AUTHOR, SERIALCODE, 5, null);
+
+        // Configure the mock objects to return the expected results
+        when(bookRepository.findById(existingBook.getId())).thenReturn(Optional.of(existingBook));
+
+        // Test deleting a book
+        bookService.deleteBook(existingBook.getId());
+        assertThrows(BadRequestException.class, () -> bookService.deleteBook(null));
+
+        // Test deleting a book that doesn't exist
+        Book nonExistingBook = new Book(2L, "fake title", "fake author", "ERT357", 7, null);
+        when(bookRepository.findById(nonExistingBook.getId())).thenReturn(Optional.empty());
+        assertThrows(NotFoundException.class, () -> bookService.deleteBook(nonExistingBook.getId()));
     }
 }

@@ -39,10 +39,7 @@ public class LoanServiceImpl implements LoanService {
         } else {
             User user = userOptional.get();
             Book book = bookOptional.get();
-            if (user.getBooks().contains(book)) {
-                log.error("User already has the book with id: {}", bookId);
-                throw new BadRequestException("User already has the book");
-            } else if (book.getQuantity() == 0) {
+            if (book.getQuantity() == 0) {
                 log.error("Book is not available with id: {}", bookId);
                 throw new BadRequestException("Book is not available");
             } else if (user.getBooks().size() >= 3) {

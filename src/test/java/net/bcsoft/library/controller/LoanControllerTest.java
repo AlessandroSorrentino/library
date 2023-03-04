@@ -11,26 +11,19 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
 class LoanControllerTest {
 
     private static final Logger log = LogManager.getLogger(BookServiceImpl.class);
@@ -55,31 +48,42 @@ class LoanControllerTest {
         doNothing().when(loanService).addLoan(user.getId(), book.getId());
 
         ResponseEntity<Void> response = loanController.createLoan(user.getId(), book.getId());
-
         log.info(response.getStatusCode());
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
     }
 
+
     @Test
     void getAllLoans() {
-        List<Book> loans = new ArrayList<>();
-        loans.add(new Book());
-        List<LoanDTO> loanDTOs = new ArrayList<>();
-        loanDTOs.add(new LoanDTO());
+        Book book1 = new Book(1L, "bookTitle1", "bookAuthor1", "ABC123", 5, new ArrayList<>());
+        Book book2 = new Book(2L, "bookTitle2", "bookAuthor2", "DEF456", 2, new ArrayList<>());
+        User user1 = new User(1L, "userName1", "userEmail1", "userPassword1", new ArrayList<>());
+        User user2 = new User(2L, "userName2", "userEmail2", "userPassword2", new ArrayList<>());
+        user1.getBooks().add(book1);
+        user2.getBooks().add(book1);
+        user2.getBooks().add(book2);
+        book1.getUsers().add(user1);
+        book1.getUsers().add(user2);
+        book2.getUsers().add(user2);
+        List<Book> loans = Arrays.asList(book1, book2);
         when(loanService.readAllLoans()).thenReturn(loans);
-        when(bookMapper.toLoanDTO(any(Book.class))).thenReturn(new LoanDTO());
-        ResponseEntity<List<LoanDTO>> responseEntity = loanController.getAllLoans();
-        log.info(responseEntity.getStatusCode() + "\n" + responseEntity.getBody());
-        assert responseEntity.getStatusCode().equals(HttpStatus.OK);
-        assert responseEntity.getBody().size() == 1;
+        List<LoanDTO> expectedLoanDTOs = loans.stream().map(bookMapper::toLoanDTO).collect(Collectors.toList());
+
+        ResponseEntity<List<LoanDTO>> response = loanController.getAllLoans();
+        log.info(response.getStatusCode() + "\n" + loans);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedLoanDTOs, response.getBody());
     }
 
     @Test
     void testDeleteLoan() {
-        Long userId = 1L;
-        Long bookId = 1L;
-        doNothing().when(loanService).removeLoan(userId, bookId);
-        ResponseEntity<Void> responseEntity = loanController.deleteLoan(userId, bookId);
-        assert responseEntity.getStatusCode().equals(HttpStatus.NO_CONTENT);
+        Book book = new Book(1L, "bookTitle", "bookAuthor", "ABC123", 5, null);
+        User user = new User(1L, "userName", "user@email.com", "userPassword", null);
+        doNothing().when(loanService).removeLoan(user.getId(), book.getId());
+
+        ResponseEntity<Void> response = loanController.deleteLoan(user.getId(), book.getId());
+        log.info(response.getStatusCode());
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }
 }
