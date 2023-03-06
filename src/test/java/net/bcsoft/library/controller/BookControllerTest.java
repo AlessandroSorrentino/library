@@ -4,39 +4,22 @@ import net.bcsoft.library.dto.BookDTO;
 import net.bcsoft.library.mapper.BookMapper;
 import net.bcsoft.library.model.Book;
 import net.bcsoft.library.service.BookService;
-import net.bcsoft.library.service.implementation.BookServiceImpl;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
 class BookControllerTest {
-
-    private static final String BOOK_SERIAL_CODE = "ABC123";
-    private static final String BOOK_SERIAL_CODE2 = "DEF456";
-
-    private static final String BOOK_AUTHOR = "Author 1";
-    private static final String BOOK_AUTHOR2 = "Author 2";
-    private static final String BOOK_TITLE = "Title 1";
-    private static final String BOOK_TITLE2 = "Title 2";
-
-    private static final Logger log = LogManager.getLogger(BookServiceImpl.class);
-    public static final long BOOK_ID = 1L;
-    private BookController bookController;
 
     @Mock
     private BookService bookService;
@@ -44,114 +27,114 @@ class BookControllerTest {
     @Mock
     private BookMapper bookMapper;
 
+    @InjectMocks
+    private BookController bookController;
+
+    private BookDTO bookDTO;
+    private Book book;
+
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        bookController = new BookController(bookService, bookMapper);
+        bookDTO = new BookDTO("title", "author", "123", 5);
+        book = new Book(1L, "title", "author", "123", 5, new ArrayList<>());
     }
 
     @Test
     void createBook() {
-        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR,BOOK_SERIAL_CODE, 5, null);
-        BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5);
         when(bookMapper.toEntity(bookDTO)).thenReturn(book);
+        when(bookService.saveBook(book)).thenReturn(book);
 
         ResponseEntity<BookDTO> response = bookController.createBook(bookDTO);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(bookDTO, response.getBody());
+
+        verify(bookMapper, times(1)).toEntity(bookDTO);
+        verify(bookService, times(1)).saveBook(book);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isEqualTo(bookDTO);
     }
 
     @Test
     void getAllBooks() {
-        Book book1 = new Book(BOOK_ID,BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        Book book2 = new Book(2L, BOOK_TITLE2, BOOK_AUTHOR2, BOOK_SERIAL_CODE2, 3, null);
-        List<Book> books = Arrays.asList(book1, book2);
-
-        BookDTO bookDTO1 = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5);
-        BookDTO bookDTO2 = new BookDTO(BOOK_TITLE2, BOOK_AUTHOR, BOOK_SERIAL_CODE2, 3);
-        List<BookDTO> bookDTOs = Arrays.asList(bookDTO1, bookDTO2);
-
+        List<Book> books = Collections.singletonList(book);
         when(bookService.readAllBooks()).thenReturn(books);
-        when(bookMapper.toDTO(book1)).thenReturn(bookDTO1);
-        when(bookMapper.toDTO(book2)).thenReturn(bookDTO2);
+        when(bookMapper.toDTO(book)).thenReturn(bookDTO);
 
         ResponseEntity<List<BookDTO>> response = bookController.getAllBooks();
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(bookDTOs, response.getBody());
 
+        verify(bookService, times(1)).readAllBooks();
+        verify(bookMapper, times(1)).toDTO(book);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1).contains(bookDTO);
     }
 
     @Test
     void getBookById() {
-        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5);
-        when(bookService.readBookById(BOOK_ID)).thenReturn(book);
+        Long bookId = 1L;
+        when(bookService.readBookById(bookId)).thenReturn(book);
         when(bookMapper.toDTO(book)).thenReturn(bookDTO);
 
-        ResponseEntity<BookDTO> response = bookController.getBookById(BOOK_ID);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(bookDTO, response.getBody());
-        verify(bookService, times(1)).readBookById(BOOK_ID);
-    }
+        ResponseEntity<BookDTO> response = bookController.getBookById(bookId);
 
+        verify(bookService, times(1)).readBookById(bookId);
+        verify(bookMapper, times(1)).toDTO(book);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(bookDTO);
+    }
 
     @Test
     void getBookBySerialCode() {
-        String serialCode = "SC1";
-        Book book = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, serialCode, 5, null);
-        BookDTO bookDTO = new BookDTO(BOOK_TITLE, BOOK_AUTHOR, serialCode, 5);
+        String serialCode = "123456789";
         when(bookService.readBookBySerialCode(serialCode)).thenReturn(book);
         when(bookMapper.toDTO(book)).thenReturn(bookDTO);
 
         ResponseEntity<BookDTO> response = bookController.getBookBySerialCode(serialCode);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(bookDTO, response.getBody());
+
+        verify(bookService, times(1)).readBookBySerialCode(serialCode);
+        verify(bookMapper, times(1)).toDTO(book);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(bookDTO);
     }
 
     @Test
-    void getAllBooksByAuthor() {
-        String author = "Alessandro Sorrentino";
-        // given
-        Book book1 = new Book(BOOK_ID, BOOK_TITLE, author, BOOK_SERIAL_CODE, 5, null);
-        Book book2 = new Book(BOOK_ID, BOOK_TITLE2, author, BOOK_SERIAL_CODE2, 3, null);
-        List<Book> books = Arrays.asList(book1, book2);
-
-        BookDTO bookDTO1 = new BookDTO(BOOK_TITLE, author, BOOK_SERIAL_CODE, 5);
-        BookDTO bookDTO2 = new BookDTO(BOOK_TITLE2, author, BOOK_SERIAL_CODE2, 3);
-        List<BookDTO> bookDTOs = Arrays.asList(bookDTO1, bookDTO2);
-
+    void getBookByAuthor() {
+        String author = "author";
+        List<Book> books = Collections.singletonList(book);
         when(bookService.readBooksByAuthor(author)).thenReturn(books);
-        when(bookMapper.toDTO(book1)).thenReturn(bookDTO1);
-        when(bookMapper.toDTO(book2)).thenReturn(bookDTO2);
+        when(bookMapper.toDTO(book)).thenReturn(bookDTO);
 
         ResponseEntity<List<BookDTO>> response = bookController.getBooksByAuthor(author);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(bookDTOs, response.getBody());
+
+        verify(bookService, times(1)).readBooksByAuthor(author);
+        verify(bookMapper, times(1)).toDTO(book);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1).contains(bookDTO);
     }
 
     @Test
     void updateBook() {
-        BookDTO bookDTO = new BookDTO( "Old Title", "Old Author", "SC1", 10);
-        Book updatedBook = new Book(BOOK_ID, BOOK_TITLE, BOOK_AUTHOR, BOOK_SERIAL_CODE, 5, null);
-        when(bookMapper.toEntity(bookDTO)).thenReturn(updatedBook);
+        Long bookId = 1L;
+        BookDTO updatedBookDTO = new BookDTO("new title", "new author", "123", 5);
+        Book updatedBook = new Book(bookId, "new title", "new author", "123", 5, new ArrayList<>());
 
-        ResponseEntity<BookDTO> response = bookController.updateBook(BOOK_ID, bookDTO);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(bookDTO, response.getBody());
+        when(bookMapper.toEntity(updatedBookDTO)).thenReturn(updatedBook);
+        when(bookService.updateBook(updatedBook)).thenReturn(updatedBook);
+
+        ResponseEntity<BookDTO> response = bookController.updateBook(bookId, updatedBookDTO);
+
+        verify(bookMapper, times(1)).toEntity(updatedBookDTO);
+        verify(bookService, times(1)).updateBook(updatedBook);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(updatedBookDTO);
     }
 
     @Test
     void deleteBook() {
         Long bookId = 1L;
-        ResponseEntity<Void> response = bookController.deleteBook(bookId);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-    }
-}
 
+        ResponseEntity<Void> response = bookController.deleteBook(bookId);
+
+        verify(bookService, times(1)).deleteBook(bookId);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+}

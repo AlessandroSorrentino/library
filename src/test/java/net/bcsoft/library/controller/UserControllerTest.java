@@ -4,37 +4,22 @@ import net.bcsoft.library.dto.UserDTO;
 import net.bcsoft.library.mapper.UserMapper;
 import net.bcsoft.library.model.User;
 import net.bcsoft.library.service.UserService;
-import net.bcsoft.library.service.implementation.BookServiceImpl;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
 class UserControllerTest {
-
-    private static final String USER_NAME = "alesorry";
-    private static final String USER_NAME2 = "vincysorry";
-
-    private static final String USER_PASSWORD = "testpassword";
-    private static final String USER_EMAIL = "alesorry@test.com";
-    private static final String USER_EMAIL2 = "vincysorry@test.com";
-
-    private static final Logger log = LogManager.getLogger(BookServiceImpl.class);
-
-    private UserController userController;
 
     @Mock
     private UserService userService;
@@ -42,76 +27,85 @@ class UserControllerTest {
     @Mock
     private UserMapper userMapper;
 
+    @InjectMocks
+    private UserController userController;
+
+    private UserDTO userDTO;
+    private User user;
+
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        userController = new UserController(userService, userMapper);
+        userDTO = new UserDTO("alesorry", "alesorry@email.com");
+        user = new User(1L, "alesorry", "alesorry@email.com", "password", new ArrayList<>());
     }
 
     @Test
     void createUser() {
-        User user = new User(1L, USER_NAME, USER_EMAIL, USER_PASSWORD, null);
-        UserDTO userDTO = new UserDTO(USER_NAME, USER_EMAIL);
         when(userMapper.toEntity(userDTO)).thenReturn(user);
+        when(userService.saveUser(user)).thenReturn(user);
 
         ResponseEntity<UserDTO> response = userController.createUser(userDTO);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.CREATED, response.getStatusCode());
-        assertEquals(userDTO, response.getBody());
+
+        verify(userMapper, times(1)).toEntity(userDTO);
+        verify(userService, times(1)).saveUser(user);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+        assertThat(response.getBody()).isEqualTo(userDTO);
     }
 
     @Test
     void getAllUsers() {
-        User user1 = new User(1L, USER_NAME, USER_EMAIL, USER_PASSWORD, null);
-        User user2 = new User(1L, USER_NAME2, USER_EMAIL2, USER_PASSWORD, null);
-        List<User> users = Arrays.asList(user1, user2);
-
-        UserDTO userDTO1 = new UserDTO(USER_NAME, USER_EMAIL);
-        UserDTO userDTO2 = new UserDTO(USER_NAME2, USER_EMAIL2);
-        List<UserDTO> userDTOs = Arrays.asList(userDTO1, userDTO2);
-
+        List<User> users = Collections.singletonList(user);
         when(userService.readAllUsers()).thenReturn(users);
-        when(userMapper.toDTO(user1)).thenReturn(userDTO1);
-        when(userMapper.toDTO(user2)).thenReturn(userDTO2);
+        when(userMapper.toDTO(user)).thenReturn(userDTO);
 
         ResponseEntity<List<UserDTO>> response = userController.getAllUsers();
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(userDTOs, response.getBody());
+
+        verify(userService, times(1)).readAllUsers();
+        verify(userMapper, times(1)).toDTO(user);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).hasSize(1).contains(userDTO);
     }
 
     @Test
     void getUserById() {
-        Long id = 1L;
-        User user = new User(id, USER_NAME, USER_EMAIL, USER_PASSWORD, null);
-        UserDTO userDTO = new UserDTO(USER_NAME, USER_EMAIL);
-        when(userService.readUserById(id)).thenReturn(user);
+        Long userId = 1L;
+        when(userService.readUserById(userId)).thenReturn(user);
         when(userMapper.toDTO(user)).thenReturn(userDTO);
 
-        ResponseEntity<UserDTO> response = userController.getUserById(id);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(userDTO, response.getBody());
+        ResponseEntity<UserDTO> response = userController.getUserById(userId);
+
+        verify(userService, times(1)).readUserById(userId);
+        verify(userMapper, times(1)).toDTO(user);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(userDTO);
     }
+
     @Test
     void updateUser() {
         Long userId = 1L;
-        UserDTO userDTO = new UserDTO("oldUsername", "oldEmail@test.com");
-        User updatedUser = new User(userId, USER_NAME, USER_EMAIL, USER_PASSWORD, null);
-        when(userMapper.toEntity(userDTO)).thenReturn(updatedUser);
+        UserDTO updatedUserDTO = new UserDTO("new username", "newemail@email.com");
+        User updatedUser = new User(userId, "newUsername", "newPassword", "newFirstName", new ArrayList<>());
 
-        ResponseEntity<UserDTO> response = userController.updateUser(userId, userDTO);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(userDTO, response.getBody());
+        when(userMapper.toEntity(updatedUserDTO)).thenReturn(updatedUser);
+        when(userService.updateUser(updatedUser)).thenReturn(updatedUser);
+
+        ResponseEntity<UserDTO> response = userController.updateUser(userId, updatedUserDTO);
+
+        verify(userMapper, times(1)).toEntity(updatedUserDTO);
+        verify(userService, times(1)).updateUser(updatedUser);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(updatedUserDTO);
     }
 
     @Test
-    void deleteBook() {
+    void deleteUser() {
         Long userId = 1L;
+        doNothing().when(userService).deleteUser(userId);
+
         ResponseEntity<Void> response = userController.deleteUser(userId);
-        log.info(response.getStatusCode() + "\n" + response.getBody());
-        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+
         verify(userService, times(1)).deleteUser(userId);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
     }
 }

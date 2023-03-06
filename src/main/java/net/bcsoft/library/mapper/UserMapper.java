@@ -4,7 +4,6 @@ import net.bcsoft.library.dto.UserDTO;
 import net.bcsoft.library.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {

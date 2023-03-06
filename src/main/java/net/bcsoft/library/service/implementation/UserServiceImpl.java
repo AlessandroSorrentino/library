@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public void updateUser(User user) {
+    public User updateUser(User user) {
         if (user == null || user.getId() == null) {
             log.error("User not updated: User or user id is null");
             throw new BadRequestException("User and user id cannot be null");
@@ -99,6 +99,7 @@ public class UserServiceImpl implements UserService {
         userRepository.save(existingUser);
 
         log.info("User updated successfully: {}", existingUser);
+        return existingUser;
     }
 
     @Override

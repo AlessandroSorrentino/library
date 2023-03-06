@@ -1,145 +1,206 @@
 package net.bcsoft.library.service.implementation;
 
-import net.bcsoft.library.exception.BadRequestException;
-import net.bcsoft.library.exception.NotFoundException;
-import net.bcsoft.library.model.Book;
-import net.bcsoft.library.model.User;
-import net.bcsoft.library.repository.BookRepository;
-import net.bcsoft.library.repository.UserRepository;
-import net.bcsoft.library.service.BookService;
-import net.bcsoft.library.service.UserService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
-@ExtendWith(MockitoExtension.class) //  per attivare l'integrazione tra JUnit e Mockito. In particolare, questa annotazione viene utilizzata per abilitare l'uso di annotazioni come @Mock
+import net.bcsoft.library.exception.BadRequestException;
+import net.bcsoft.library.exception.NotFoundException;
+import net.bcsoft.library.model.User;
+import net.bcsoft.library.repository.UserRepository;
+
 class UserServiceImplTest {
-
-    public static final String USERNAME = "AleSorry";
-    public static final String EMAIL = "alesorry@example.com";
-    public static final String PASSWORD = "password123";
-    public static final long USER_ID = 1L;
-    private UserService userService;
 
     @Mock
     private UserRepository userRepository;
 
+    @InjectMocks
+    private UserServiceImpl userService;
+
+    private User user;
+
     @BeforeEach
-    void setUp() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        userService = new UserServiceImpl(userRepository);
+        user = new User(1L, "User", "testuser@example.com", "password123", null);
+
     }
 
     @Test
-    void testSaveUser() {
-        User user = new User(USER_ID, USERNAME, EMAIL, PASSWORD, null);
-
-        // Mock the book repository to return the list of loaned books
+    void testSaveUser_success() {
+        when(userRepository.existsByEmailIgnoreCase(user.getEmail())).thenReturn(false);
         when(userRepository.save(user)).thenReturn(user);
 
-        // Test adding a new user
         User savedUser = userService.saveUser(user);
-        assertNotNull(savedUser);
-        assertEquals(user, savedUser);
 
-        // Test adding a new user that doesn't exist
+        assertEquals(user, savedUser);
+        verify(userRepository, times(1)).existsByEmailIgnoreCase(user.getEmail());
+        verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void testSaveUser_nullUser_throwBadRequestException() {
         assertThrows(BadRequestException.class, () -> userService.saveUser(null));
 
-        // Create a new user with a duplicate email
-        User duplicateUser = new User(2L, "DuplicateUser", "alesorry@example.com", "password123", null);
-        when(userRepository.existsByEmailIgnoreCase(duplicateUser.getEmail())).thenReturn(true);
-        assertThrows(BadRequestException.class, () -> userService.saveUser(duplicateUser));
+        verify(userRepository, never()).existsByEmailIgnoreCase(anyString());
+        verify(userRepository, never()).save(any(User.class));
     }
 
+    @Test
+    void testSaveUser_existingUser_throwBadRequestException() {
+        when(userRepository.existsByEmailIgnoreCase(user.getEmail())).thenReturn(true);
+
+        assertThrows(BadRequestException.class, () -> userService.saveUser(user));
+
+        verify(userRepository, times(1)).existsByEmailIgnoreCase(user.getEmail());
+        verify(userRepository, never()).save(any(User.class));
+    }
 
     @Test
-    void testReadAllUsers() {
-        List<User> userList = new ArrayList<>();
-        userList.add(new User(USER_ID, USERNAME, EMAIL , PASSWORD,null));
-        userList.add(new User(2L, "AleDolly", "aledolly@example.com", "password456", null));
+    void testReadAllUsers_success() {
+        User user2 = new User();
+        user2.setId(2L);
 
-        // Configure the mock objects to return the expected results
-        when(userRepository.findAll()).thenReturn(userList);
+        List<User> users = new ArrayList<>();
+        users.add(user);
+        users.add(user2);
 
-        // Test retrieving all users
-        List<User> result = userService.readAllUsers();
-        assertNotNull(result);
-        assertEquals(userList, result);
+        when(userRepository.findAll()).thenReturn(users);
 
-        // Test retrieving all users when there are none
-        when(userRepository.findAll()).thenReturn(new ArrayList<>());
+        List<User> retrievedUsers = userService.readAllUsers();
+
+        assertEquals(2, retrievedUsers.size());
+        assertEquals(user, retrievedUsers.get(0));
+        assertEquals(user2, retrievedUsers.get(1));
+        verify(userRepository, times(1)).findAll();
+    }
+
+    @Test
+    void testReadAllUsers_emptyList_throwNotFoundException() {
+        List<User> users = new ArrayList<>();
+
+        when(userRepository.findAll()).thenReturn(users);
+
         assertThrows(NotFoundException.class, () -> userService.readAllUsers());
+
+        verify(userRepository, times(1)).findAll();
     }
 
     @Test
-    void testReadUserById() {
-        User user = new User(USER_ID, USERNAME, EMAIL, PASSWORD, null);
+    void testReadUserById_success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        // Configure the mock objects to return the expected results
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        User result = userService.readUserById(1L);
+        assertThat(result).isEqualTo(user);
+        verify(userRepository, times(1)).findById(1L);
+    }
 
-        // Test retrieving a book by id
-        User result = userService.readUserById(USER_ID);
-        assertNotNull(result);
-        assertEquals(user, result);
-
-        // Test retrieving a book with a null id
+    @Test
+    void testReadUserById_nullId_throwBadRequestException() {
         assertThrows(BadRequestException.class, () -> userService.readUserById(null));
+        verify(userRepository, times(0)).findById(anyLong());
+    }
 
-        // Test retrieving a book with a non-existing id
+    @Test
+    void testReadUserById_userNotFound_throwNotFoundException() {
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
         assertThrows(NotFoundException.class, () -> userService.readUserById(2L));
+        verify(userRepository, times(1)).findById(2L);
     }
 
     @Test
-    void testUpdateUser() {
-        User existingUser = new User(USER_ID, USERNAME, EMAIL, PASSWORD, null);
-        User updatedUser = new User(1L, "newusername", "newemail@example.com", "newpassword123", null);
+    void testUpdateUser_success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(user)).thenReturn(user);
 
-        // Configure the mock objects to return the expected results
-        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(existingUser)).thenReturn(existingUser);
+        User updatedUser = userService.updateUser(user);
 
-        // Test updating a user
-        userService.updateUser(updatedUser);
-        assertEquals(updatedUser, existingUser);
-
-        // Test updating a user that doesn't exist
-        User nonExistingUser = new User(2L, "NonExisting", "nonexisting@example.com", "password123", null);
-        when(userRepository.findById(nonExistingUser.getId())).thenReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () -> userService.updateUser(nonExistingUser));
-
-        // Test updating a book with an email that already exists
-        User duplicateUser = new User(2L, "DuplicateUser", "alesorry@example.com", "password123", null);
-        when(userRepository.findById(duplicateUser.getId())).thenReturn(Optional.of(existingUser));
-        when(userRepository.existsByEmailIgnoreCase(duplicateUser.getEmail())).thenReturn(true);
-        assertThrows(BadRequestException.class, () -> userService.updateUser(duplicateUser));
+        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).save(updatedUser);
     }
 
+    @Test
+    void testUpdateUser_emailAlreadyExists_throwBadRequestException() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.existsByEmailIgnoreCase("updateduser@example.com")).thenReturn(true);
+
+        User updatedUser = new User(1L, "User", "updateduser@example.com", "newpassword", null);
+
+        assertThrows(BadRequestException.class, () -> userService.updateUser(updatedUser));
+
+        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, never()).save(updatedUser);
+    }
 
     @Test
-    void testDeleteUser() {
-        User existingUser = new User(USER_ID, USERNAME, EMAIL, PASSWORD, null);
+    void testUpdateUser_nullUser_throwBadRequestException() {
+        assertThrows(BadRequestException.class, () -> userService.updateUser(null));
+        verify(userRepository, times(0)).findById(any());
+        verify(userRepository, times(0)).save(any(User.class));
+    }
 
-        // Configure the mock objects to return the expected results
-        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+    @Test
+    void testUpdateUser_nullUserId_throwBadRequestException() {
+        User userNull = new User();
+        assertThrows(BadRequestException.class, () -> userService.updateUser(userNull));
+        verify(userRepository, never()).findById(anyLong());
+        verify(userRepository, never()).save(any(User.class));
+    }
 
-        // Test deleting an user
-        userService.deleteUser(existingUser.getId());
+    @Test
+    void testUpdateUser_userNotFound_throwNotFoundException() {
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        User updatedUser = new User(2L, "User", "updateduser@example.com", "newpassword", null);
+
+        assertThrows(NotFoundException.class, () -> userService.updateUser(updatedUser));
+
+        verify(userRepository, times(1)).findById(2L);
+        verify(userRepository, never()).save(updatedUser);
+    }
+
+    @Test
+    void testDeleteUser_success() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        userService.deleteUser(1L);
+
+        verify(userRepository, times(1)).findById(1L);
+        verify(userRepository, times(1)).deleteById(1L);
+    }
+
+    @Test
+    void testDeleteUser_userNotFound_throwNotFoundException() {
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        assertThrows(NotFoundException.class, () -> userService.deleteUser(2L));
+
+        verify(userRepository, times(1)).findById(2L);
+        verify(userRepository, times(0)).deleteById(1L);
+    }
+
+    @Test
+    void testDeleteUser_nullId_throwBadRequestException() {
         assertThrows(BadRequestException.class, () -> userService.deleteUser(null));
 
-        // Test deleting a user that doesn't exist
-        User nonExistingUser = new User(2L, "NonExisting", "nonexisting@example.com", "password123", null);
-        when(userRepository.findById(nonExistingUser.getId())).thenReturn(Optional.empty());
-        assertThrows(NotFoundException.class, () -> userService.deleteUser(nonExistingUser.getId()));
+        verify(userRepository, times(0)).existsById(2L);
+        verify(userRepository, times(0)).deleteById(2L);
+
     }
 }
